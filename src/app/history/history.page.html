@@ -1,0 +1,66 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Historique</ion-title>
+    <ion-buttons slot="end">
+      <ion-button (click)="clearHistory()">
+        <ion-icon name="trash" slot="icon-only"></ion-icon>
+      </ion-button>
+    </ion-buttons>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-searchbar [(ngModel)]="searchQuery" (ionInput)="filterHistory()" placeholder="Rechercher..."></ion-searchbar>
+  </ion-toolbar>
+  <ion-toolbar>
+    <ion-segment [(ngModel)]="filterType" (ionChange)="filterHistory()">
+      <ion-segment-button value="all">
+        <ion-label>Tous</ion-label>
+      </ion-segment-button>
+      <ion-segment-button value="favorites">
+        <ion-label>Favoris</ion-label>
+      </ion-segment-button>
+    </ion-segment>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <ion-list *ngIf="filteredHistory.length > 0">
+    <ion-card *ngFor="let item of filteredHistory">
+      <ion-card-header>
+        <ion-card-title>
+          <div class="history-header">
+            <span class="language-badge">{{getLanguageName(item.sourceLang)}} → {{getLanguageName(item.targetLang)}}</span>
+            <span class="timestamp">{{formatDate(item.timestamp)}}</span>
+          </div>
+        </ion-card-title>
+      </ion-card-header>
+      
+      <ion-card-content>
+        <div class="text-section">
+          <strong>Original:</strong>
+          <p>{{item.sourceText}}</p>
+        </div>
+        <div class="text-section">
+          <strong>Traduction:</strong>
+          <p>{{item.translatedText}}</p>
+        </div>
+        
+        <div class="action-buttons">
+          <ion-button fill="clear" size="small" (click)="toggleFavorite(item)">
+            <ion-icon [name]="item.isFavorite ? 'star' : 'star-outline'" slot="start"></ion-icon>
+          </ion-button>
+          <ion-button fill="clear" size="small" (click)="copyTranslation(item.translatedText)">
+            <ion-icon name="copy" slot="start"></ion-icon>
+          </ion-button>
+          <ion-button fill="clear" size="small" color="danger" (click)="deleteItem(item.id)">
+            <ion-icon name="trash" slot="start"></ion-icon>
+          </ion-button>
+        </div>
+      </ion-card-content>
+    </ion-card>
+  </ion-list>
+
+  <div *ngIf="filteredHistory.length === 0" class="empty-state">
+    <ion-icon name="time" style="font-size: 64px; color: var(--ion-color-medium);"></ion-icon>
+    <p>Aucune traduction</p>
+  </div>
+</ion-content>

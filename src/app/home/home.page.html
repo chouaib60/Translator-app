@@ -1,0 +1,167 @@
+<ion-header>
+  <ion-toolbar color="primary">
+    <ion-title>Traducteur</ion-title>
+  </ion-toolbar>
+</ion-header>
+
+<ion-content [fullscreen]="true">
+  <div class="app-wrapper">
+    
+    <!-- Section visuelle avec avatars -->
+    <div class="header-visual">
+      <div class="clouds"></div>
+      
+      <div class="avatar-group">
+        <div class="avatar-node top-left">
+          <div class="speech-bubble">Bonjour!</div>
+          <ion-avatar><img src="https://i.pravatar.cc/150?u=1"></ion-avatar>
+        </div>
+        <div class="avatar-node top-right">
+          <div class="speech-bubble">你好</div>
+          <ion-avatar><img src="https://i.pravatar.cc/150?u=2"></ion-avatar>
+        </div>
+        
+        <div class="main-action">
+          <div class="pulse-animation"></div>
+          <ion-fab-button color="light" class="mic-btn" (click)="startVoiceRecognition()">
+            <ion-icon [name]="isListening ? 'mic' : 'mic-outline'"></ion-icon>
+          </ion-fab-button>
+        </div>
+
+        <div class="avatar-node bottom-left">
+          <div class="speech-bubble">¡Hola!</div>
+          <ion-avatar><img src="https://i.pravatar.cc/150?u=3"></ion-avatar>
+        </div>
+        <div class="avatar-node bottom-right">
+          <div class="speech-bubble">Hello!</div>
+          <ion-avatar><img src="https://i.pravatar.cc/150?u=4"></ion-avatar>
+        </div>
+      </div>
+    </div>
+
+    <!-- Interface de traduction -->
+    <div class="interface-container">
+      <!-- Sélecteurs de langue -->
+      <div class="lang-bar">
+        <ion-select 
+          label="De" 
+          label-placement="floating" 
+          fill="outline" 
+          [(ngModel)]="sourceLang"
+          interface="popover">
+          <ion-select-option value="auto">Détecter</ion-select-option>
+          <ion-select-option value="fr">Français</ion-select-option>
+          <ion-select-option value="en">Anglais</ion-select-option>
+          <ion-select-option value="es">Espagnol</ion-select-option>
+          <ion-select-option value="de">Allemand</ion-select-option>
+          <ion-select-option value="it">Italien</ion-select-option>
+          <ion-select-option value="pt">Portugais</ion-select-option>
+          <ion-select-option value="ar">Arabe</ion-select-option>
+          <ion-select-option value="zh">Chinois</ion-select-option>
+          <ion-select-option value="ja">Japonais</ion-select-option>
+          <ion-select-option value="ko">Coréen</ion-select-option>
+          <ion-select-option value="ru">Russe</ion-select-option>
+        </ion-select>
+        
+        <ion-button fill="clear" class="swap-btn" (click)="swapLanguages()" [disabled]="sourceLang === 'auto'">
+          <ion-icon name="swap-horizontal"></ion-icon>
+        </ion-button>
+
+        <ion-select 
+          label="Vers" 
+          label-placement="floating" 
+          fill="outline" 
+          [(ngModel)]="targetLang"
+          interface="popover">
+          <ion-select-option value="fr">Français</ion-select-option>
+          <ion-select-option value="en">Anglais</ion-select-option>
+          <ion-select-option value="es">Espagnol</ion-select-option>
+          <ion-select-option value="de">Allemand</ion-select-option>
+          <ion-select-option value="it">Italien</ion-select-option>
+          <ion-select-option value="pt">Portugais</ion-select-option>
+          <ion-select-option value="ar">Arabe</ion-select-option>
+          <ion-select-option value="zh">Chinois</ion-select-option>
+          <ion-select-option value="ja">Japonais</ion-select-option>
+          <ion-select-option value="ko">Coréen</ion-select-option>
+          <ion-select-option value="ru">Russe</ion-select-option>
+        </ion-select>
+      </div>
+
+      <!-- Zone de traduction horizontale -->
+      <div class="translation-area">
+        <!-- Colonne gauche: Texte source -->
+        <div class="text-column source-column">
+          <div class="column-header">
+            <h3>Texte source</h3>
+            <ion-button fill="clear" size="small" (click)="startVoiceRecognition()" [disabled]="isListening">
+              <ion-icon [name]="isListening ? 'mic' : 'mic-outline'" [color]="isListening ? 'danger' : 'primary'"></ion-icon>
+            </ion-button>
+          </div>
+          
+          <ion-card class="text-card">
+            <ion-card-content>
+              <ion-textarea 
+                rows="8" 
+                placeholder="Entrez votre texte ou utilisez le micro..." 
+                [(ngModel)]="sourceText"
+                (ionInput)="onSourceTextChange()">
+              </ion-textarea>
+              
+              <div class="card-actions">
+                <ion-button fill="clear" size="small" (click)="speakText(sourceText, sourceLang)" [disabled]="!sourceText">
+                  <ion-icon name="volume-high" slot="icon-only"></ion-icon>
+                </ion-button>
+                <ion-button fill="clear" size="small" (click)="clearText()" [disabled]="!sourceText">
+                  <ion-icon name="trash" slot="icon-only"></ion-icon>
+                </ion-button>
+                <span class="char-count">{{sourceText.length}}</span>
+              </div>
+            </ion-card-content>
+          </ion-card>
+        </div>
+
+        <!-- Colonne droite: Traduction -->
+        <div class="text-column target-column">
+          <div class="column-header">
+            <h3>Traduction</h3>
+            <ion-spinner *ngIf="isTranslating" name="crescent" color="primary"></ion-spinner>
+          </div>
+          
+          <ion-card class="text-card result-card">
+            <ion-card-content>
+              <div class="translation-text" *ngIf="translatedText">
+                {{translatedText}}
+              </div>
+              <div class="empty-state" *ngIf="!translatedText">
+                <ion-icon name="language-outline"></ion-icon>
+                <p>La traduction apparaîtra ici</p>
+              </div>
+              
+              <div class="card-actions" *ngIf="translatedText">
+                <ion-button fill="clear" size="small" (click)="speakText(translatedText, targetLang)">
+                  <ion-icon name="volume-high" slot="icon-only"></ion-icon>
+                </ion-button>
+                <ion-button fill="clear" size="small" (click)="copyToClipboard(translatedText)">
+                  <ion-icon name="copy" slot="icon-only"></ion-icon>
+                </ion-button>
+              </div>
+            </ion-card-content>
+          </ion-card>
+        </div>
+      </div>
+
+      <!-- Bouton de traduction -->
+      <ion-button 
+        expand="block" 
+        class="main-btn" 
+        (click)="translateText()"
+        [disabled]="!sourceText || isTranslating">
+        <ion-spinner *ngIf="isTranslating" name="crescent"></ion-spinner>
+        <ion-icon *ngIf="!isTranslating" name="language-outline" slot="start"></ion-icon>
+        <span *ngIf="!isTranslating">TRADUIRE</span>
+      </ion-button>
+
+    </div>
+
+  </div>
+</ion-content>
