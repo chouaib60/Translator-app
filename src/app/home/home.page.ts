@@ -1,41 +1,19 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
 import { FormsModule } from '@angular/forms';
+import { Capacitor } from '@capacitor/core';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonCard, 
-  IonCardContent, IonTextarea, 
-  IonButton, IonIcon, IonSpinner, IonSelect, IonSelectOption, 
-  IonFabButton, IonAvatar, ToastController
+  IonCardContent, IonTextarea, IonButton, IonIcon, 
+  IonSpinner, IonSelect, IonSelectOption, IonFabButton, 
+  IonAvatar, ToastController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
 import { 
   swapHorizontal, volumeHigh, copy, trash, 
-  languageOutline, mic, micOutline 
+  languageOutline, mic, micOutline, shareOutline
 } from 'ionicons/icons';
 import { TranslationService } from '../services/translation.service';
-
-// Interface pour la reconnaissance vocale
-interface SpeechRecognitionEvent extends Event {
-  results: SpeechRecognitionResultList;
-}
-
-interface SpeechRecognitionResultList {
-  length: number;
-  item(index: number): SpeechRecognitionResult;
-  [index: number]: SpeechRecognitionResult;
-}
-
-interface SpeechRecognitionResult {
-  isFinal: boolean;
-  length: number;
-  item(index: number): SpeechRecognitionAlternative;
-  [index: number]: SpeechRecognitionAlternative;
-}
-
-interface SpeechRecognitionAlternative {
-  transcript: string;
-  confidence: number;
-}
 
 @Component({
   selector: 'app-home',
@@ -44,9 +22,9 @@ interface SpeechRecognitionAlternative {
   standalone: true,
   imports: [
     CommonModule, FormsModule, IonHeader, IonToolbar, IonTitle,
-    IonContent, IonCard, IonCardContent,
-    IonTextarea, IonButton, IonIcon, IonSpinner, IonSelect,
-    IonSelectOption, IonFabButton, IonAvatar
+    IonContent, IonCard, IonCardContent, IonTextarea, IonButton, 
+    IonIcon, IonSpinner, IonSelect, IonSelectOption, IonFabButton, 
+    IonAvatar
   ]
 })
 export class HomePage implements OnInit {
@@ -58,6 +36,7 @@ export class HomePage implements OnInit {
   isListening = false;
   autoTranslateTimeout: any;
   recognition: any;
+  isNative = false;
 
   constructor(
     private translationService: TranslationService,
@@ -65,9 +44,15 @@ export class HomePage implements OnInit {
   ) {
     addIcons({ 
       swapHorizontal, volumeHigh, copy, trash, 
-      languageOutline, mic, micOutline 
+      languageOutline, mic, micOutline, shareOutline
     });
-    this.initSpeechRecognition();
+    
+    // Détecter si on est sur mobile natif
+    this.isNative = Capacitor.isNativePlatform();
+    
+    if (!this.isNative) {
+      this.initSpeechRecognition();
+    }
   }
 
   async ngOnInit() {
@@ -76,7 +61,7 @@ export class HomePage implements OnInit {
     this.targetLang = settings.defaultTargetLang;
   }
 
-  // Initialiser la reconnaissance vocale
+  // Reconnaissance vocale (Web uniquement pour l'instant)
   initSpeechRecognition() {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
@@ -86,19 +71,14 @@ export class HomePage implements OnInit {
       this.recognition.interimResults = false;
       this.recognition.lang = this.sourceLang === 'auto' ? 'fr-FR' : `${this.sourceLang}-${this.sourceLang.toUpperCase()}`;
 
-      this.recognition.onresult = (event: SpeechRecognitionEvent) => {
+      this.recognition.onresult = (event: any) => {
         const transcript = event.results[0][0].transcript;
         this.sourceText = transcript;
         this.isListening = false;
-        
-        // Traduire automatiquement après la reconnaissance
-        setTimeout(() => {
-          this.translateText();
-        }, 500);
+        setTimeout(() => this.translateText(), 500);
       };
 
       this.recognition.onerror = (event: any) => {
-        console.error('Erreur reconnaissance vocale:', event.error);
         this.isListening = false;
         this.showToast('Erreur: ' + event.error);
       };
@@ -109,7 +89,6 @@ export class HomePage implements OnInit {
     }
   }
 
-  // Démarrer la reconnaissance vocale
   startVoiceRecognition() {
     if (!this.recognition) {
       this.showToast('Reconnaissance vocale non disponible');
@@ -118,15 +97,13 @@ export class HomePage implements OnInit {
 
     if (this.isListening) {
       this.recognition.stop();
-      this.isListening = false;
     } else {
       try {
-        this.recognition.lang = this.sourceLang === 'auto' ? 'fr-FR' : `${this.sourceLang}-${this.sourceLang.toUpperCase()}`;
+        this.recognition.lang = this.sourceLang === 'auto' ? 'fr-FR' : `${this.sourceLang}`;
         this.recognition.start();
         this.isListening = true;
         this.showToast('Parlez maintenant...');
       } catch (error) {
-        console.error('Erreur démarrage reconnaissance:', error);
         this.showToast('Impossible de démarrer le micro');
       }
     }
@@ -134,12 +111,9 @@ export class HomePage implements OnInit {
 
   onSourceTextChange() {
     clearTimeout(this.autoTranslateTimeout);
-    
     this.translationService.getSettings().then(settings => {
       if (settings.autoTranslate && this.sourceText.trim()) {
-        this.autoTranslateTimeout = setTimeout(() => {
-          this.translateText();
-        }, 1000);
+        this.autoTranslateTimeout = setTimeout(() => this.translateText(), 1000);
       }
     });
   }
@@ -166,10 +140,10 @@ export class HomePage implements OnInit {
         sourceLang: this.sourceLang,
         targetLang: this.targetLang
       });
-    } catch (error: any) {
+    } catch (error) {
       console.error('Translation error:', error);
       this.translatedText = 'Erreur lors de la traduction';
-      this.showToast(error?.message || 'Erreur de traduction');
+      this.showToast('Erreur de traduction');
     } finally {
       this.isTranslating = false;
     }
@@ -177,33 +151,37 @@ export class HomePage implements OnInit {
 
   swapLanguages() {
     if (this.sourceLang === 'auto') return;
-    
     const temp = this.sourceLang;
     this.sourceLang = this.targetLang;
     this.targetLang = temp;
-    
     const tempText = this.sourceText;
     this.sourceText = this.translatedText;
     this.translatedText = tempText;
   }
 
-  speakText(text: string, lang: string) {
+  async speakText(text: string, lang: string) {
     if (!text) return;
     
-    if ('speechSynthesis' in window) {
-      // Arrêter toute lecture en cours
-      window.speechSynthesis.cancel();
-      
-      const utterance = new SpeechSynthesisUtterance(text);
-      utterance.lang = lang === 'auto' ? 'fr-FR' : lang;
-      utterance.rate = 0.9;
-      utterance.pitch = 1;
-      
-      window.speechSynthesis.speak(utterance);
-      this.showToast('Lecture en cours...');
+    if (this.isNative) {
+      // Utiliser le TTS natif
+      await this.translationService.speak(text, lang);
     } else {
-      this.showToast('Synthèse vocale non disponible');
+      // Utiliser Web Speech API
+      if ('speechSynthesis' in window) {
+        window.speechSynthesis.cancel();
+        const utterance = new SpeechSynthesisUtterance(text);
+        utterance.lang = lang === 'auto' ? 'fr-FR' : lang;
+        window.speechSynthesis.speak(utterance);
+      }
     }
+    this.showToast('Lecture en cours...');
+  }
+
+  async shareTranslation() {
+    if (!this.translatedText) return;
+    await this.translationService.shareTranslation(
+      `${this.sourceText}\n\n→\n\n${this.translatedText}`
+    );
   }
 
   async copyToClipboard(text: string) {

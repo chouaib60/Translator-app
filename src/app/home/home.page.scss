@@ -1,12 +1,11 @@
-$primary-bg: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-$accent-blue: #667eea;
-$card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+/* Variables moved to src/global.scss */
+
 
 .app-wrapper {
   display: flex;
   flex-direction: column;
   height: 100%;
-  background: $primary-bg;
+  background: var(--primary-bg);
 }
 
 .header-visual {
@@ -39,10 +38,8 @@ $card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   }
 }
 
-@keyframes float {
-  0%, 100% { transform: translateY(0px); }
-  50% { transform: translateY(-10px); }
-}
+/* Keyframes moved to src/global.scss (float) */
+
 
 .avatar-node {
   position: absolute;
@@ -85,16 +82,8 @@ $card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   }
 }
 
-@keyframes fadeInUp {
-  from {
-    opacity: 0;
-    transform: translateY(20px);
-  }
-  to {
-    opacity: 1;
-    transform: translateY(0);
-  }
-}
+/* Keyframes moved to src/global.scss (fadeInUp) */
+
 
 .speech-bubble {
   background: white;
@@ -104,7 +93,7 @@ $card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   font-weight: 600;
   margin-bottom: 6px;
   box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-  color: $accent-blue;
+  color: var(--accent-blue);
   position: relative;
   
   &::after {
@@ -135,9 +124,8 @@ $card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     
     ion-icon { 
       font-size: 2.2rem; 
-      color: $accent-blue; 
+      color: var(--accent-blue); 
     }
-    
     &:hover {
       transform: scale(1.05);
     }
@@ -158,16 +146,8 @@ $card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   pointer-events: none;
 }
 
-@keyframes pulse {
-  0% { 
-    transform: translate(-50%, -50%) scale(1); 
-    opacity: 1; 
-  }
-  100% { 
-    transform: translate(-50%, -50%) scale(2); 
-    opacity: 0; 
-  }
-}
+/* Keyframes moved to src/global.scss (pulse) */
+
 
 .interface-container {
   flex: 1.5;
@@ -193,7 +173,7 @@ $card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
     }
     
     .swap-btn {
-      --color: $accent-blue;
+      --color: var(--accent-blue);
       margin: 0;
       
       ion-icon {
@@ -225,14 +205,14 @@ $card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
           margin: 0;
           font-size: 1rem;
           font-weight: 600;
-          color: $accent-blue;
+          color: var(--accent-blue);
         }
       }
     }
 
     .text-card {
       margin: 0;
-      box-shadow: $card-shadow;
+      box-shadow: var(--card-shadow);
       border-radius: 16px;
       height: 100%;
       
@@ -290,7 +270,7 @@ $card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         margin-top: 8px;
         
         ion-button {
-          --color: $accent-blue;
+          --color: var(--accent-blue);
           margin: 0;
         }
         
@@ -324,13 +304,5 @@ $card-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
   }
 }
 
-@keyframes slideUp {
-  from {
-    transform: translateY(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateY(0);
-    opacity: 1;
-  }
-}
+/* Keyframes moved to src/global.scss (slideUp) */
+

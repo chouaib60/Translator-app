@@ -68,3 +68,9 @@ testem.log
 # System files
 .DS_Store
 Thumbs.db
+
+{
+  "type": "anyComponentStyle",
+  "maximumWarning": "4kb",
+  "maximumError": "6kb"
+}
