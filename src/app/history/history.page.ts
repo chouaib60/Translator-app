@@ -4,7 +4,7 @@ import { FormsModule } from '@angular/forms';
 import {
   IonHeader, IonToolbar, IonTitle, IonContent, IonList,
   IonLabel, IonIcon, IonButton, IonButtons, IonSearchbar, IonSegment,
-  IonSegmentButton, IonCard, IonCardContent,
+  IonSegmentButton, IonCard, IonCardHeader, IonCardTitle, IonCardContent,
   AlertController
 } from '@ionic/angular/standalone';
 import { addIcons } from 'ionicons';
@@ -19,7 +19,7 @@ import { TranslationService, Translation } from '../services/translation.service
   imports: [
     CommonModule, FormsModule, IonHeader, IonToolbar, IonTitle, IonContent,
     IonList, IonLabel, IonIcon, IonButton, IonButtons,
-    IonSearchbar, IonSegment, IonSegmentButton, IonCard, IonCardContent
+    IonSearchbar, IonSegment, IonSegmentButton, IonCard, IonCardHeader, IonCardTitle, IonCardContent
   ]
 })
 export class HistoryPage implements OnInit {
