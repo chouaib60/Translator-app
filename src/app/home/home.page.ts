@@ -37,6 +37,7 @@ export class HomePage implements OnInit {
   autoTranslateTimeout: any;
   recognition: any;
   isNative = false;
+  nativeSpeechPlugin: any;
 
   constructor(
     private translationService: TranslationService,
@@ -50,7 +51,10 @@ export class HomePage implements OnInit {
     // Détecter si on est sur mobile natif
     this.isNative = Capacitor.isNativePlatform();
     
-    if (!this.isNative) {
+    if (this.isNative) {
+      // Préparer le fallback natif (plugin Cordova/Capacitor)
+      this.initNativeSpeechRecognition();
+    } else {
       this.initSpeechRecognition();
     }
   }
@@ -61,7 +65,7 @@ export class HomePage implements OnInit {
     this.targetLang = settings.defaultTargetLang;
   }
 
-  // Reconnaissance vocale (Web uniquement pour l'instant)
+  // Reconnaissance vocale (Web)
   initSpeechRecognition() {
     const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
     
@@ -89,7 +93,91 @@ export class HomePage implements OnInit {
     }
   }
 
+  // Reconnaissance vocale (Native fallback - Cordova/Capacitor plugin expected)
+  async initNativeSpeechRecognition() {
+    const win = window as any;
+    const sr = win.plugins?.speechRecognition || win.SpeechRecognition;
+    if (!sr) {
+      console.warn('Plugin de reconnaissance vocale natif non trouvé');
+      this.showToast('Plugin vocal non trouvé. Executez `npx cap sync android` puis rebuild.');
+      return;
+    }
+
+    this.nativeSpeechPlugin = sr;
+
+    // Vérifier et demander la permission micro si nécessaire
+    try {
+      if (sr.hasPermission) {
+        sr.hasPermission((granted: boolean) => {
+          if (!granted && sr.requestPermission) {
+            sr.requestPermission(() => {}, (err: any) => this.showToast('Permission micro refusée'));
+          }
+        }, (err: any) => console.warn('hasPermission error', err));
+      }
+    } catch (error) {
+      console.warn('Erreur init speech plugin', error);
+    }
+  }
+
   startVoiceRecognition() {
+    // Native path (Cordova plugin like cordova-plugin-speechrecognition)
+    if (this.isNative) {
+      const win = window as any;
+      const sr = this.nativeSpeechPlugin || win.plugins?.speechRecognition || win.SpeechRecognition;
+      if (!sr) {
+        this.showToast('Reconnaissance vocale non disponible sur cet appareil');
+        return;
+      }
+
+      // Request permission if necessary
+      try {
+        if (sr.hasPermission) {
+          sr.hasPermission((granted: boolean) => {
+            if (!granted && sr.requestPermission) {
+              sr.requestPermission(() => {}, (err: any) => this.showToast('Permission micro refusée'));
+            }
+          }, (err: any) => {
+            console.warn('hasPermission error', err);
+          });
+        }
+
+        if (this.isListening) {
+          // Try to stop native listening
+          if (sr.stopListening) sr.stopListening();
+          this.isListening = false;
+        } else {
+          const options: any = {
+            language: this.sourceLang === 'auto' ? 'fr-FR' : this.sourceLang,
+            matches: 1,
+            prompt: 'Parlez maintenant',
+            showPopup: false
+          };
+
+          if (sr.startListening) {
+            sr.startListening((matches: string[]) => {
+              this.sourceText = matches && matches[0] ? matches[0] : '';
+              this.isListening = false;
+              setTimeout(() => this.translateText(), 500);
+            }, (err: any) => {
+              this.isListening = false;
+              this.showToast('Erreur micro: ' + (err && err.message ? err.message : err));
+            }, options);
+
+            this.isListening = true;
+            this.showToast('Parlez maintenant...');
+          } else {
+            this.showToast('Plugin de reconnaissance non compatible');
+          }
+        }
+      } catch (error) {
+        console.error('Native speech error', error);
+        this.showToast('Impossible de démarrer le micro');
+      }
+
+      return;
+    }
+
+    // Web path
     if (!this.recognition) {
       this.showToast('Reconnaissance vocale non disponible');
       return;
@@ -140,10 +228,11 @@ export class HomePage implements OnInit {
         sourceLang: this.sourceLang,
         targetLang: this.targetLang
       });
-    } catch (error) {
+    } catch (error: any) {
       console.error('Translation error:', error);
       this.translatedText = 'Erreur lors de la traduction';
-      this.showToast('Erreur de traduction');
+      const msg = error?.message || 'Erreur de traduction';
+      this.showToast(msg);
     } finally {
       this.isTranslating = false;
     }

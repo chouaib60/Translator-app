@@ -26,7 +26,7 @@ export class SettingsPage implements OnInit {
     maxHistoryItems: 100,
     defaultSourceLang: 'auto',
     defaultTargetLang: 'en'
-  };
+  };  
 
   languages = [
     { code: 'auto', name: 'Détecter' },

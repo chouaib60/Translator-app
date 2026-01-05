@@ -18,7 +18,7 @@ export interface Settings {
   maxHistoryItems: number;
   defaultSourceLang: string;
   defaultTargetLang: string;
-}
+} 
 
 @Injectable({
   providedIn: 'root'
@@ -35,26 +35,38 @@ export class TranslationService {
     defaultTargetLang: 'en'
   };
 
-  // Traduction avec API
+  // ============================================
+  // OPTION 1: MyMemory Translation API (GRATUITE)
+  // ============================================
   async translate(text: string, sourceLang: string, targetLang: string): Promise<string> {
     try {
-      const response = await fetch('https://api.anthropic.com/v1/messages', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          model: 'claude-sonnet-4-20250514',
-          max_tokens: 1000,
-          messages: [{ 
-            role: 'user', 
-            content: `Translate this text from ${sourceLang} to ${targetLang}. Only provide the translation without any explanation:\n\n${text}` 
-          }]
-        })
-      });
+      // Détection automatique de la langue
+      const fromLang = sourceLang === 'auto' ? '' : sourceLang;
+      
+      // Encoder le texte pour l'URL
+      const encodedText = encodeURIComponent(text);
+      
+      // API MyMemory (gratuite, 1000 requêtes/jour)
+      const url = `https://api.mymemory.translated.net/get?q=${encodedText}&langpair=${fromLang}|${targetLang}`;
+      
+      const response = await fetch(url);
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+      
       const data = await response.json();
-      return data.content[0].text;
+      
+      if (data.responseStatus === 200 || data.responseStatus === '200') {
+        return data.responseData.translatedText;
+      } else {
+        throw new Error('Translation API error: ' + data.responseDetails);
+      }
     } catch (error) {
       console.error('Translation error:', error);
-      throw new Error('Translation failed');
+      
+      // Fallback: retourner un message d'erreur informatif
+      throw new Error('Impossible de traduire. Vérifiez votre connexion internet.');
     }
   }
 
@@ -149,4 +161,4 @@ export class TranslationService {
   async saveSettings(settings: Settings): Promise<void> {
     localStorage.setItem(this.SETTINGS_KEY, JSON.stringify(settings));
   }
-}
+  }
